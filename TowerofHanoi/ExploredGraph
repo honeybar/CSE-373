@@ -1,0 +1,559 @@
+import java.util.List;
+import java.util.Queue;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.Set;
+import java.util.Stack;
+import java.util.function.Function;
+
+/**
+ * 
+ */
+
+/**
+ * @author Averina Ita.
+ * Extra Credit Options Implemented, if any: A5E1, A5E2, A5E3  (mention them here.)
+ * to run A* algorithm (A3), simply call aStar(v0,vj) function
+ * 
+ * Solution to Assignment 5 in CSE 373, Autumn 2016
+ * University of Washington.
+ * 
+ * (Based on starter code v1.3. By Steve Tanimoto.)
+ *
+ * Java version 8 or higher is recommended.
+ * This class is used to solve Tower of Hanoi Problem using graph. The algorithm used are: Depth Search algorithm, A* Algorithm, 
+ * Breadth-search graph, and Djikstra's. 
+ */
+
+// Here is the main application class:
+public class ExploredGraph {
+	Set<Vertex> Ve; // collection of explored vertices
+	Set<Edge> Ee;   // collection of explored edges
+	private Operator[] opList; // store possible moves 
+	private int edgeCostType; // choice for calculating edge cost method
+	public ExploredGraph() {
+		Ve = new LinkedHashSet<Vertex>();
+		Ee = new LinkedHashSet<Edge>();
+		edgeCostType = 1;
+	}
+	public void initialize(Vertex vi) {
+		opList = genOperator(vi.pegs.size());
+	}
+	public void initialize() {
+		opList = genOperator(3);
+	}
+	public int nvertices() { // return the number of vertices
+		return Ve.size();
+	} 
+	// generate all possible moves as a general rule and return the collection rule
+	public Operator[] genOperator(int peg) { 
+		opList = new Operator[peg*(peg-1)];
+		int j = 1; // counter for destination peg
+		int i = 0; // counter for array position
+		int x = 1; // counter for starting peg
+		while(i < opList.length ){
+			while(j <= peg) {
+				if(x != j) {
+					opList[i] = new Operator(x-1,j-1);
+					i++;
+				}
+				j++;
+			}
+			x = x % peg +1;
+			j = 1;
+		}
+		return opList;
+	}
+	// return the no of edges 
+	public int nedges() {
+		return Ee.size();
+	}    
+	// Implement this. (Iterative Depth-First Search)
+	public void idfs(Vertex vi, Vertex vj) {
+		Ve.clear(); // clear all previously explored vertices
+		Ee.clear(); // clear all previously explored edges
+		vi.predessor = null; // set the starting vertex preceder as null
+		Stack<Vertex> open = new Stack<Vertex>(); // hold unexplored vertices
+		open.push(vi); // add the starting vertex
+		while( !open.isEmpty() ) { 
+			Vertex v = open.pop();
+			Set<Vertex> succcessors = successVer(v); // find next possible vertexes from vertex v
+			for(Vertex s:succcessors) { 
+				if(!open.contains(s) && !Ve.contains(s)) { // check if vertex is not in closed nor open
+					open.push(s);
+					s.predessor  = v;
+				} 
+				if( s.predessor != null) {
+					Ee.add(new Edge(s.predessor,s));
+				}
+			}
+			Ve.add(v);
+		}
+		
+	} 
+	// Implement this. (Breadth-First Search)
+	public void bfs(Vertex vi, Vertex vj) {
+		Ve.clear(); // clear all previously explored vertices
+		Ee.clear();// clear all previously explored edges
+		Queue<Vertex> open = new LinkedList<Vertex>(); // hold unexplored vertices
+		vi.predessor = null; // set the starting vertex preceder as null
+		open.add(vi); // add the starting vertex
+		Vertex v = vi;
+		while( !open.isEmpty() && !vj.equals(v) ) { 
+			v = open.remove();
+			Set<Vertex> succcessors = successVer(v); // find next possible vertexes from vertex v
+			for(Vertex s:succcessors) {
+				if(!open.contains(s) && !Ve.contains(s)) { // check if vertex is not in closed nor open
+					open.add(s);
+					s.predessor  = v;
+				} 
+				if( s.predessor != null) {
+					Ee.add(new Edge(s.predessor,s));
+				}
+			}
+			Ve.add(v);
+		}
+	} 
+	// return the path from starting vertex to goal 
+	public ArrayList<Vertex> retrievePath(Vertex vi) {
+		ArrayList<Vertex> path = new ArrayList<Vertex>(); // store the vertexes that lead to the goal
+		if(Ve.isEmpty()){
+			return path;
+		}
+		Vertex temp = null; 
+		for(Vertex s: Ve){
+			if(s.equals(vi)) { // find goal vertex in possible 
+				temp = s;
+				break;
+			} 
+		}
+		Stack<Vertex> backtrack = new Stack<Vertex>(); 
+		backtrack.push(vi);
+		while(temp.predessor != null) {  // backtrack path from goal to starting vertex
+			backtrack.push(temp.predessor);
+			temp = temp.predessor;
+		}
+		while(!backtrack.isEmpty()) { //forward path from starting vertex to goal
+			Vertex next = backtrack.pop();
+			path.add(next);
+		}
+		return path;
+	} 
+	// return the shortest path using Djikstra's algorithm
+	public ArrayList<Vertex> shortestPath(Vertex vi, Vertex vj) {
+		Ve.clear(); // clear all previously explored vertices
+		Ee.clear();// clear all previously explored edges
+		Queue<Vertex> open = new LinkedList<Vertex>(); // store unexplored vertices
+		ArrayList<Double> cost = new ArrayList<Double>(); // find cost for each vertex from starting vertex
+		ArrayList<Vertex> path = new ArrayList<Vertex>(); // store vertex respective to the cost.
+		Set<Vertex> explored =  new LinkedHashSet<Vertex>(); // store explored vertexes
+		ArrayList<Vertex> shortpath = new ArrayList<Vertex>(); // store the shortest path to goal
+		vi.predessor = null;
+		open.add(vi);
+		path.add(vi);
+		Vertex v = vi;
+		cost.add(0.0);
+		while( !open.isEmpty() && !vj.equals(v) ) {
+			v = path.get(minDistance(explored,cost,path)); // find the vertice with the least cost
+			Set<Vertex> succcessors = successVer(v); // find the next possible vertexes from vertex v
+			for(Vertex s:succcessors) {
+				if(!open.contains(s) && !explored.contains(s)) { // check if vertex is not in open nor explored
+					open.add(s);
+					path.add(s);
+					cost.add(Double.MAX_VALUE);
+					s.predessor  = v;
+				} 
+				if( s.predessor != null) {
+					Edge e = new Edge(s.predessor,s);
+					double edgecost = calDoubleEdgeCost(e); // find cost of an edge
+					Ee.add(e); 
+					double h = edgecost + cost.get(path.indexOf(s.predessor)); // find cost from starting vertex to this vertex 
+					if(cost.get(path.indexOf(s)) > h) { // check if current cost is greater than the new cost
+						cost.set(path.indexOf(s), h); // replace the current cost with the cheaper cost
+					}
+				}
+			}
+			explored.add(v);
+			Ve.add(v);
+			open.remove(v);
+		}
+		v = vj;
+		Stack<Vertex> backtrack = new Stack<Vertex>(); 
+		backtrack.push(vj);
+		double sum = cost.get(path.indexOf(vj)); // set sum to the cost of vertex goal
+		while(sum > 0) { 
+			LinkedList<Integer> indexes = new LinkedList<Integer>();
+			for(Edge e: Ee) { // find possible vertexes from vertex v
+				if(e.getEndPoint2().equals(v) ) {
+					indexes.add(path.indexOf(e.getEndPoint1()));
+				}
+			}
+			double min = Integer.MAX_VALUE;
+			int index = 0;
+			for(int i : indexes) { // find the smallest cost out of next possible vertexes
+				if(min > cost.get(i) ) {
+					min = cost.get(i);
+					index = i;
+				}
+			}
+			sum = min ;
+			System.out.println(sum + " "+ path.get(index));
+			backtrack.push(path.get(index));
+			v = path.get(index); 
+		}
+		while(!backtrack.isEmpty()) { // forward the backtracking
+			shortpath.add(backtrack.pop());
+		}
+		return shortpath;
+	} // Implement this.
+
+	public int minDistance(Set<Vertex>explored, ArrayList<Double> cost, ArrayList<Vertex> path) {
+		int index = 0;
+		double dist = Double.MAX_VALUE;
+		for(int i = 0; i < cost.size(); i++) {
+			if(!explored.contains(path.get(i)) && cost.get(i) < dist ) {
+				dist = cost.get(i);
+				index = i;
+			}
+		}
+		return index;
+		
+	}
+	public Set<Vertex> getVertices() { // return vertices
+		return Ve;
+	}
+	
+	public Set<Edge> getEdges() { // return edges
+		return Ee;
+	} 
+
+	public double calDoubleEdgeCost (Edge e) { // determine the movement of the pegs and return the edge cost
+		ArrayList<Stack<Integer>> ii = e.getEndPoint1().pegs;
+		ArrayList<Stack<Integer>> jj = e.getEndPoint2().pegs;
+		int peg1 = 0;
+		int peg2 = 0;
+		int k = 0;
+		for(int i = 0; i < ii.size(); i++) {
+			if(!ii.get(i).equals(jj.get(i))) { // if the difference between 2 pegs found...
+				if( k == 0) {
+					if(ii.get(i).size() > jj.get(i).size()) { // if the first vertex has a disk that vertex 2 doesn't
+						k = ii.get(i).peek(); // set k to the said disk
+					} else { 
+						k = jj.get(i).peek();
+					}
+				}
+				// determine the movement of the disk 
+				if(jj.get(i).size() > ii.get(i).size()) { // if jj has greater size
+					peg2 = i; // this is the destination
+				} else {
+					peg1 = i; // this is the starting point
+				}
+			}
+		}
+		if( edgeCostType == 5) { 
+			return setEdgeCost(peg1, peg2, k);
+		} else {
+			return edgeCost(peg1, peg2, k);
+		}
+	}
+	
+	public Set<Edge> findEdge(Vertex v) { // find edge where it has v as staring point
+		Set<Edge> edges = new LinkedHashSet<Edge>();
+		for(Edge e: Ee) {
+			if(e.point1.equals(v)) {
+				edges.add(e);
+			}
+		}
+		return edges;
+	}
+	
+	// return the shortest path using A* algorithm
+	public ArrayList<Vertex> aStar(Vertex vi, Vertex vj) {
+		Ve.clear(); // clear all previously explored vertices
+		Ee.clear();// clear all previously explored edges
+		Queue<Vertex> open = new LinkedList<Vertex>(); // store unexplored vertices
+		ArrayList<Double> cost = new ArrayList<Double>(); // find cost for each vertex from starting vertex
+		ArrayList<Vertex> path = new ArrayList<Vertex>(); // store vertex respective to the cost.
+		Set<Vertex> explored =  new LinkedHashSet<Vertex>(); // store explored vertexes
+		ArrayList<Vertex> shortpath = new ArrayList<Vertex>(); // store the shortest path to goal
+		vi.predessor = null;
+		open.add(vi);
+		path.add(vi);
+		Vertex v = vi;
+		cost.add(0.0);
+		while( !open.isEmpty() && !vj.equals(v) ) {
+			v = path.get(minDistance(explored,cost,path)); // find the vertice with the least cost
+			Set<Vertex> succcessors = successVer(v);
+			for(Vertex s:succcessors) {
+				if(!open.contains(s) && !Ve.contains(s)) {
+					open.add(s);
+					path.add(s);
+					cost.add(Double.MAX_VALUE);
+					s.predessor  = v;
+				} 
+				if( s.predessor != null) {
+					Edge e = new Edge(s.predessor,s);
+					double edgecost = calDoubleEdgeCost(e); // get cost of the edge 
+					Ee.add(e);
+					double h = edgecost + cost.get(path.indexOf(s.predessor)); // calculate cost from starting vertex to current vertex
+					double f = h + heuristic(v); // combine cost with predicted cost to goal
+					if(cost.get(path.indexOf(s)) > f) { // switch cost if new cost is chepaer than the current cost
+						cost.set(path.indexOf(s), f);
+					}
+				}
+			}
+			explored.add(v);
+			Ve.add(v);
+			open.remove(v);
+		}
+		v = vj;
+		Stack<Vertex> backtrack = new Stack<Vertex>();
+		backtrack.push(vj);
+		double sum = cost.get(path.indexOf(vj));
+		while(sum > 0) { // backtracking
+			LinkedList<Integer> indexes = new LinkedList<Integer>();
+			for(Edge e: Ee) {
+				if(e.getEndPoint2().equals(v) ) {
+					indexes.add(path.indexOf(e.getEndPoint1()));
+				}
+			}
+			double min = Integer.MAX_VALUE;
+			int index = 0;
+			for(int i : indexes) { // find path with minimum cost to the starting vertex
+				if(min > cost.get(i) ) {
+					min = cost.get(i);
+					index = i;
+				}
+			}
+			sum = min ;
+			backtrack.push(path.get(index));
+			v = path.get(index);
+		}
+		if(!backtrack.peek().equals(vi)) {
+			backtrack.push(vi);
+		}
+		while(!backtrack.isEmpty()) { // forward the path from starting vertex to goal vertex
+			shortpath.add(backtrack.pop());
+		}
+		return shortpath;
+	}
+	// heuristic function predicts the path finding by checking how many disks that are not at the last peg
+	public int heuristic(Vertex v) {
+		int sum = 0;
+		int totalpeg = 0;
+		for(int i = 0; i < v.pegs.size()-1; i++){ // calculate the no of disks that are not in place
+			if(v.pegs.get(i).size() != 0) {
+				sum = sum + (2 * v.pegs.get(i).size() - 1);
+				totalpeg = totalpeg + v.pegs.get(i).size();
+			}
+		}
+		int last = totalpeg + v.pegs.get(v.pegs.size()-1).size();
+		int notinplace = 0;
+		// check for disks that are not in proper place in goal peg
+		if(!v.pegs.get(v.pegs.size()-1).isEmpty()) { 
+			for(int i = 0; i < v.pegs.get(v.pegs.size()-1).size() ; i++) {
+				if(!v.pegs.get(v.pegs.size()-1).get(i).equals(last)){
+					 notinplace++;
+				}
+				last--;
+			}
+		}
+		return sum + 2*notinplace;
+	}
+	// find the next possible vertex from v
+	private Set<Vertex> successVer (Vertex v) {
+		Set<Vertex> successors = new LinkedHashSet<Vertex>();
+		for(int i = 0; i < opList.length; i++) {
+			Vertex tempv = new Vertex(v.toString());
+			if( opList[i].precondition(tempv)) {
+				Vertex va = opList[i].transition(tempv);
+				successors.add(va);
+			}
+		}
+		return successors;
+	}
+	// determine the method that is going to be used to calculate cost type
+	public void useEdgeCostFunction(int m) {
+		edgeCostType = m;
+	}
+	// calculate edge cost using different method chosen by useEdgeCostFunction
+	public int edgeCost(int i,int j,int k) {
+		if(edgeCostType == 1) {
+			return 1;
+		}
+		if( edgeCostType == 2 ){
+			return k;
+		}
+		if(edgeCostType == 3) {
+			return k*k;
+		}
+		if(edgeCostType == 4) { 
+			int edgecost  = 2;
+			for(int jj = 1; jj < k; jj++) {
+				edgecost = 2 * edgecost;
+			}
+			return edgecost;
+		} 
+		// custom method at edgeCostype = 6 
+		// cost is calculated based on the disk size and the distance between 2 pegs
+		return k * Math.abs(j-i); 
+	}
+	// calculate edgeCost at using type 5
+	public double setEdgeCost(int i,int j,int k) {
+		double edgecost  = 2;
+		for(int jj = 1; jj < k; jj++) {
+			edgecost = 2 * edgecost;
+		}
+		if(j != 1) {
+			edgecost = edgecost * 0.1;
+		} 
+		return edgecost;
+	}
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		ExploredGraph eg = new ExploredGraph();
+		// Test the vertex constructor: 
+		Vertex v0 = eg.new Vertex("[[4,3,2,1],[],[]]");
+		eg.initialize(v0);
+		Vertex vj = eg.new Vertex("[[],[],[4,3,2,1]]");
+		//eg.idfs(v0, vj);
+		//ArrayList<Vertex> path1 = eg.retrievePath(vj);
+		eg.bfs(v0, vj);
+		eg.useEdgeCostFunction(2);
+		ArrayList<Vertex> shortpath1 =eg.retrievePath( vj);
+		ArrayList<Vertex> shortpath2 =eg.shortestPath(v0, vj);
+		System.out.println(shortpath1.equals(shortpath2));
+		
+		// Add your own tests here.
+		// The autograder code will be used to test your basic functionality later.
+
+	}
+	
+	class Vertex {
+		ArrayList<Stack<Integer>> pegs; // Each vertex will hold a Towers-of-Hanoi state.
+		// There will be 3 pegs in the standard version, but more if you do extra credit option A5E1.
+		Vertex predessor; // determine the previous vertex
+		// Constructor that takes a string such as "[[4,3,2,1],[],[]]":
+		
+		public Vertex (String vString) {
+			String[] parts = vString.split("\\],\\[");
+			pegs = new ArrayList<Stack<Integer>>(parts.length);
+			for (int i=0; i < parts.length;i++) {
+				pegs.add(new Stack<Integer>());
+				try {
+					parts[i]=parts[i].replaceAll("\\[","");
+					parts[i]=parts[i].replaceAll("\\]","");
+					List<String> al = new ArrayList<String>(Arrays.asList(parts[i].split(",")));
+					//System.out.println("ArrayList al is: "+al);
+					Iterator<String> it = al.iterator();
+					while (it.hasNext()) {
+						String item = it.next();
+                        if (!item.equals("")) {
+                               // System.out.println("item is: "+item);
+                                pegs.get(i).push(Integer.parseInt(item));
+                        }
+					}
+				}
+				catch(NumberFormatException nfe) { nfe.printStackTrace(); }
+			}
+		}
+		public String toString() {
+			String ans = "[";
+			for (int i=0; i< pegs.size(); i++) {
+			    ans += pegs.get(i).toString().replace(" ", "");
+				if (i<pegs.size()-1) { ans += ","; }
+			}
+			ans += "]";
+			return ans;
+		}
+		@Override 
+		public boolean equals(Object v) {
+			if(v == null || !(v instanceof Vertex)) {
+				return false;
+			}
+			return toString().equals(v.toString().trim());
+		}
+		
+		@Override
+	    public int hashCode() {
+	        return pegs.hashCode();
+	    }
+	}
+	
+	class Edge {
+		private Vertex point1; 
+		private Vertex point2;
+		
+		public Edge(Vertex vi, Vertex vj) {
+			// Add whatever you need to here.
+			this.point1 = vi;
+			this.point2 = vj;
+		}
+		// return point1
+		public Vertex getEndPoint1() {
+			return point1;
+		}
+		// return point2
+		public Vertex getEndPoint2() {
+			return point2;
+		}
+		public String toString() {
+			return "Edge from " + point1.toString() + " to " + point2.toString();
+		}
+		
+		@Override
+		public boolean equals(Object v) {
+			if(v == null || !(v instanceof Edge)) {
+				return false;
+			}
+			return toString().equals(v.toString().trim());
+		}
+		
+		@Override
+	    public int hashCode() {
+	        return point1.hashCode() + point2.hashCode();
+	    }
+	}
+	
+	class Operator {
+		private int i, j;
+
+		public Operator(int i, int j) { // Constructor for operators.
+			this.i = i;
+			this.j = j;
+		}
+
+		public boolean precondition(Vertex v) {
+			// TODO: Add code that will determine whether or not this 
+			// operator is applicable to this vertex.
+			if( v.pegs.get(i).isEmpty()  ) { // check if starting peg is empty
+				return false;
+			}
+			
+			if(v.pegs.get(j).isEmpty()) { // check if destination peg is empty
+				return true;
+			}
+			return v.pegs.get(i).peek() < v.pegs.get(j).peek(); // check if the disk in starting peg is smaller than destination peg
+		}
+
+		public Vertex transition(Vertex v) { 
+			// TODO: Add code to return a "successor" of v, according
+			// to this operator.
+			v.pegs.get(j).push(v.pegs.get(i).pop());
+			return v; 
+		}
+		
+		public String toString() {
+			// TODO: Add code to return a string good enough
+			// to distinguish different operators
+			return "move from peg " + i + " to " + j;
+		}
+	}
+
+}
