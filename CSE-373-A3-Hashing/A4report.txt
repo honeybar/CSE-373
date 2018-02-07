@@ -1,0 +1,49 @@
+Name: Averina Ita
+UWNetID: 1521105
+Section: BE
+
+Note: Due to previous undiscovered problems, ColorHash.java is now updated to fix the previous bugs. 
+	   Please use the updated version.
+	   ColorKey.java is modified to suit this application. Please use this one. See no 2 for details
+ 
+1. For the hash table, two arrays are used. One is to store keys and the other is to store the values.
+
+2. FeatureVector.java: 
+   Magnitude(FeatureVector other) ---> calculate the sum of the magnitudes of both vectors
+   dotProduct(FeatureVector other) ----> calculate the dot product of the vectors
+   
+   ColorKey.java:
+   Equals(ColorKey other) ---> modified so that if other turns out to be null, it will return false
+   
+   ColorHash.java:
+   solveLinearCollision(ColorKey key, long value) ---- > Solve collision using linear probing (for adding values only)
+   solveQuadraticCollision(ColorKey key, long value) ---- > Solve collision using quadratic probing (for adding values only)
+   findSpaceLinear(ColorKey key, long value, ColorKey[] keys, long[] values)---> Find empty slot in the table using linear probing
+   findSpaceQuadratic(ColorKey key, long value, ColorKey[] keys, long[] values) ----> Find empty slot in the table using quadratic probing
+   
+3. Total black pixel: 62007
+
+4.  collisionTests:
+Bits Per Pixel   C(Mona,linear)  C(Mona,quadratic)  C(Starry,linear) C(Starry,quadratic) C(Christina,linear) C(Christina,quadratic)
+		24				40				331115		  		43		  		1334109		  		156		   			1341177
+		21				37				157431		  		28		  		282905		  		62		   			44730
+		18				40				29715		  		40		  		456061		  		510		   			22490
+		15				287				24239		  		23		  		19901			  	24		   			10496
+		12				615				98380		  		31		  		82495			  	693		   			93320
+		9				9				4615		  		12		  		214			  		16		   			5964
+		6				3				4545		  		5		  		88			  		15		   			552
+		3				0				0		  			2		  		2			  		427		   			427
+
+5. fullSimilarityTests:
+Bits Per Pixel       S(Mona,Starry)    S(Mona,Christina)     S(Starry,Christina)
+24       				0.02379       	0.01201       	       0.0098
+21       				0.02907       	0.01946       	       0.0126
+18       				0.0383       	0.02215       	       0.01902
+15       				0.08018       	0.03954       	       0.02135
+12       				0.19089       	0.04893       	       0.04494
+9       				0.41631       	0.34431       	       0.07442
+6       				0.65617       	0.38023       	       0.26564
+3       				0.83527       	0.96349       	       0.85884
+
+6. Picture that has less variety of colors tend to have more collisions compared to those that have more variety.
+
